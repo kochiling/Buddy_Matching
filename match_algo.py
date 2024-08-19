@@ -108,6 +108,8 @@ def get_buddies():
                 other_users.append({'uid': uid, **user_info})
     
     combined_buddies.append({'uid': user_id, **current_user_info})
+    other_users.append({'uid': user_id, **current_user_info})
+
     if combined_buddies:
         df_combined = pd.DataFrame(combined_buddies)
          # Label encode categorical variables for Gower similarity calculation
@@ -127,6 +129,8 @@ def get_buddies():
 
         # Display similarity matrix with user IDs as row/column labels
         similarity_matrix = pd.DataFrame(df_combined_gower, index=df_combined['uid'], columns=df_combined['uid'])
+        print("Similarity Matrix:")
+        print(similarity_matrix)
 
         # Implement KNN to find matched buddies
         k = 3 # Call a function to get the value of k
@@ -153,6 +157,8 @@ def get_buddies():
         df_other_users_gower = gower.gower_matrix(df_other_users_subset)
 
         similarity_matrix = pd.DataFrame(df_other_users_gower, index=df_other_users['uid'], columns=df_other_users['uid'])
+        print("Similarity Matrix:")
+        print(similarity_matrix)
         k = 3
         matched_buddies = knn_match_buddies(similarity_matrix, k, user_id)
         store_knn_matches_in_firebase(user_id, matched_buddies)
