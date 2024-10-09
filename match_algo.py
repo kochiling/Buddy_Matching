@@ -4,7 +4,8 @@ from firebase_admin import credentials, db
 import pandas as pd
 import gower
 from sklearn.preprocessing import LabelEncoder
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
 
 app = Flask(__name__)
 
@@ -30,7 +31,7 @@ def knn_match_buddies(similarity_matrix, k, user_id):
 
     # Get the number of users and ensure k is not greater than the number of users
     num_users = similarity_matrix.shape[0]
-    k = min(k, num_users - 1)
+    k = max(1, min(k, num_users - 1))
 
     # Calculate the distance matrix (similarity) and replace NaN values with a default value
     distance_matrix = similarity_matrix
@@ -55,6 +56,8 @@ def knn_match_buddies(similarity_matrix, k, user_id):
             nearest_buddies = [buddy for buddy in nearest_buddies if buddy != user_id]
             matched_buddies[user_id] = nearest_buddies
 
+    print (matched_buddies)
+
     return matched_buddies
 
 def store_knn_matches_in_firebase(user_id, matched_buddies):
@@ -70,6 +73,8 @@ def store_knn_matches_in_firebase(user_id, matched_buddies):
             ref.update({
                 buddy_id: True
             })
+
+      
     
     #return jsonify("Matches stored successfully!")
 
@@ -104,6 +109,8 @@ def get_buddies():
             if user_info.get('course') == current_user_course and user_seniority is not None:
                 if user_seniority > current_user_seniority or user_seniority < current_user_seniority:
                     combined_buddies.append({'uid': uid, **user_info})
+                else:
+                    other_users.append({'uid': uid, **user_info})
             else:
                 other_users.append({'uid': uid, **user_info})
     
@@ -126,6 +133,7 @@ def get_buddies():
         # Calculate Gower similarity for hobbies and personalities within the same course buddies
         df_combined_subset = df_combined[['course', 'hobbies', 'personalities', 'seniority']]
         df_combined_gower = gower.gower_matrix(df_combined_subset)
+        
 
         # Display similarity matrix with user IDs as row/column labels
         similarity_matrix = pd.DataFrame(df_combined_gower, index=df_combined['uid'], columns=df_combined['uid'])
