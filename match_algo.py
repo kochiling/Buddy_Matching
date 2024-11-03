@@ -4,8 +4,7 @@ from firebase_admin import credentials, db
 import pandas as pd
 import gower
 from sklearn.preprocessing import LabelEncoder
-from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
-from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import NearestNeighbors
 
 app = Flask(__name__)
 
@@ -73,9 +72,6 @@ def store_knn_matches_in_firebase(user_id, matched_buddies):
             ref.update({
                 buddy_id: True
             })
-
-      
-    
     #return jsonify("Matches stored successfully!")
 
 @app.route('/get_buddies', methods=['POST'])
@@ -133,7 +129,6 @@ def get_buddies():
         # Calculate Gower similarity for hobbies and personalities within the same course buddies
         df_combined_subset = df_combined[['course', 'hobbies', 'personalities', 'seniority']]
         df_combined_gower = gower.gower_matrix(df_combined_subset)
-        
 
         # Display similarity matrix with user IDs as row/column labels
         similarity_matrix = pd.DataFrame(df_combined_gower, index=df_combined['uid'], columns=df_combined['uid'])
@@ -141,11 +136,10 @@ def get_buddies():
         print(similarity_matrix)
 
         # Implement KNN to find matched buddies
-        k = 3 # Call a function to get the value of k
+        k = 4 # Call a function to get the value of k
         matched_buddies = knn_match_buddies(similarity_matrix, k, user_id)
         store_knn_matches_in_firebase(user_id, matched_buddies)
         
-    
     else:
         return jsonify("No combined buddies found!"), 400
     
@@ -167,31 +161,13 @@ def get_buddies():
         similarity_matrix = pd.DataFrame(df_other_users_gower, index=df_other_users['uid'], columns=df_other_users['uid'])
         print("Similarity Matrix:")
         print(similarity_matrix)
-        k = 3
+        k = 4
         matched_buddies = knn_match_buddies(similarity_matrix, k, user_id)
         store_knn_matches_in_firebase(user_id, matched_buddies)
         return jsonify("Match Successfully!")
 
     else:
         return jsonify("No other users found!"), 400
-    
-    
-@app.route('/one')
-def one():
-    return "one"
-
-@app.route('/user', methods=['POST'])
-def user():
-    user_id = request.json.get('user_id')
-    if not user_id:
-        return "User ID is missing!", 400
-    return "User ID: " + user_id
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
-
-
-
-
